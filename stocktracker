@@ -1,11 +1,16 @@
 import yfinance as yf
 import os
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-# Your defined list of stocks
+# 1. CONFIGURATION
+# Your current holdings (from your portfolio)
 MY_STOCKS = ["TATAPOWER.NS", "JIOFIN.NS", "CGPOWER.NS", "KAYNES.NS", "SUZLON.NS"]
+SENDER_EMAIL = "your-email@gmail.com" # <--- REPLACE WITH YOUR GMAIL ADDRESS
 
-def get_report():
-    report = "📈 DAILY MARKET REPORT\n" + "="*25 + "\n"
+def get_market_report():
+    report = "📈 DAILY MARKET REPORT\n" + "="*30 + "\n\n"
     for ticker in MY_STOCKS:
         stock = yf.Ticker(ticker)
         df = stock.history(period="1d")
@@ -13,10 +18,35 @@ def get_report():
             price = df['Close'].iloc[-1]
             open_p = df['Open'].iloc[-1]
             change = ((price - open_p) / open_p) * 100
-            report += f"{ticker}: ₹{price:.2f} ({change:+.2f}%)\n"
+            
+            # Fetch news headline
+            news = stock.news
+            headline = news[0]['title'] if news else "No recent news."
+            
+            report += f"{ticker:12} | ₹{price:8.2f} ({change:+.2f}%)\n"
+            report += f"   Latest: {headline}\n"
+            report += "-"*35 + "\n"
     return report
 
+def send_email(content):
+    # This pulls the 16-digit key safely from GitHub Secrets
+    app_password = os.getenv("EMAIL_PASS")
+    
+    msg = MIMEMultipart()
+    msg['From'] = SENDER_EMAIL
+    msg['To'] = SENDER_EMAIL
+    msg['Subject'] = "🚀 Your Automated Market Update"
+    msg.attach(MIMEText(content, 'plain'))
+    
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(SENDER_EMAIL, app_password)
+            server.send_message(msg)
+        print("Success: Email sent!")
+    except Exception as e:
+        print(f"Error: {e}")
+
 if __name__ == "__main__":
-    full_data = get_report()
-    print(full_data) 
-    # Later, we will add the "send_email(full_data)" function here
+    report_data = get_market_report()
+    send_email(report_data)
