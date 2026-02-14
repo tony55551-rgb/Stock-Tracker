@@ -6,52 +6,47 @@ from email.mime.multipart import MIMEMultipart
 
 SENDER_EMAIL = "tony55551@gmail.com"
 
-def get_research_data(ticker):
+def get_ai_intel(ticker):
     try:
         stock = yf.Ticker(ticker)
         info = stock.info
         
-        # Fundamental Metrics
+        # Fundamental Data
         pe = info.get('trailingPE', 'N/A')
         eps = info.get('trailingEps', 'N/A')
-        cap = info.get('marketCap', 0)
-        fv = info.get('faceValue', 'N/A')
+        m_cap = info.get('marketCap', 0)
         price = info.get('currentPrice', 'N/A')
         change = info.get('regularMarketChangePercent', 0)
 
-        # Categorization Logic
-        cap_label = "MID-CAP" if cap > 200000000000 else "SMALL-CAP"
-        cap_color = "#3498db" if cap_label == "MID-CAP" else "#e67e22"
+        # Growth Category Logic
+        cap_type = "MID-CAP" if m_cap > 200000000000 else "SMALL-CAP"
+        cap_color = "#2980b9" if cap_type == "MID-CAP" else "#d35400"
 
-        # AI News Scan for Order Books & Institutions
+        # AI Sector/Institutional Scan
         news = stock.news
-        order_book = "Neutral: Standard operations."
-        inst_view = "No major institutional alerts."
+        intel_alert = "Neutral: Watching for catalysts."
+        keywords = ["order book", "l1 bidder", "goldman", "jp morgan", "contract", "breakout"]
         
         for n in news:
             title = n.get('title', "").lower()
-            if any(k in title for k in ["order book", "l1 bidder", "contract", "win"]):
-                order_book = f"🚀 <b>{n.get('title')}</b>"
-            if any(k in title for k in ["goldman", "jp morgan", "morgan stanley", "rating"]):
-                inst_view = f"🏛️ <b>{n.get('title')}</b>"
+            if any(k in title for k in keywords):
+                intel_alert = f"🎯 <b>{n.get('title')}</b>"
+                break
 
         return f"""
-        <div style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px; font-family: sans-serif;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f4f4f4; padding-bottom: 10px;">
-                <span style="font-size: 1.2em; font-weight: bold; color: #2c3e50;">{ticker}</span>
-                <span style="background: {cap_color}; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.8em;">{cap_label}</span>
+        <div style="background: white; border-radius: 10px; padding: 20px; margin-bottom: 15px; border-left: 6px solid {cap_color}; font-family: 'Segoe UI', Arial, sans-serif; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between;">
+                <span style="font-size: 1.3em; font-weight: bold; color: #2c3e50;">{ticker}</span>
+                <span style="background: {cap_color}; color: white; padding: 2px 12px; border-radius: 15px; font-size: 0.8em; height: 20px;">{cap_type}</span>
             </div>
-            <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr;">
-                <p><b>Price:</b> ₹{price} <span style="color: {'green' if change >= 0 else 'red'};">({change:+.2f}%)</span></p>
-                <p><b>Face Value:</b> {fv}</p>
-                <p><b>PE Ratio:</b> {pe if pe == 'N/A' else f"{pe:.2f}"}</p>
-                <p><b>EPS:</b> {eps if eps == 'N/A' else f"{eps:.2f}"}</p>
+            <div style="margin: 15px 0; display: flex; justify-content: space-between; font-size: 0.95em;">
+                <span>Price: <b>₹{price}</b> (<span style="color: {'#27ae60' if change >= 0 else '#c0392b'};">{change:+.2f}%</span>)</span>
+                <span>PE: <b>{pe if pe == 'N/A' else f"{pe:.2f}"}</b></span>
+                <span>EPS: <b>{eps if eps == 'N/A' else f"{eps:.2f}"}</b></span>
             </div>
-            <div style="background: #f9f9f9; padding: 10px; border-radius: 5px; margin-top: 10px;">
-                <p style="margin: 0; font-size: 0.9em; color: #555;"><b>ORDER BOOK:</b> {order_book}</p>
-            </div>
-            <div style="background: #eef2f3; padding: 10px; border-radius: 5px; margin-top: 10px;">
-                <p style="margin: 0; font-size: 0.9em; color: #555;"><b>INSTITUTIONAL INTEL:</b> {inst_view}</p>
+            <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; font-size: 0.9em; line-height: 1.4;">
+                <span style="color: #7f8c8d; font-weight: bold; text-transform: uppercase; font-size: 0.75em;">AI Intel & Order Flow:</span><br>
+                {intel_alert}
             </div>
         </div>
         """
@@ -61,34 +56,34 @@ def main():
     with open('watchlist.txt', 'r') as f:
         stocks = [line.strip() for line in f if line.strip()]
 
-    html_content = """
+    html_report = f"""
     <html>
-    <body style="background-color: #f4f7f6; padding: 20px;">
-        <h2 style="color: #2c3e50; text-align: center;">🔥 AI MULTIBAGGER INTELLIGENCE REPORT</h2>
-        <p style="text-align: center; color: #7f8c8d;">Focus: High Order Books | Growth Fundamentals</p>
-        <hr style="border: 0; height: 1px; background: #ddd; margin-bottom: 30px;">
+    <body style="background-color: #f0f2f5; padding: 30px; margin: 0;">
+        <div style="max-width: 600px; margin: auto;">
+            <h1 style="color: #1a2a3a; text-align: center; margin-bottom: 5px;">Market Intelligence</h1>
+            <p style="text-align: center; color: #7f8c8d; margin-bottom: 30px;">Emerging Small/Mid-Cap Growth Scan</p>
     """
     
     for ticker in stocks:
-        html_content += get_research_data(ticker)
+        html_report += get_ai_intel(ticker)
 
-    html_content += """
-        <p style="font-size: 0.8em; color: #95a5a6; text-align: center; margin-top: 30px;">
-            Generated by Tony's AI Tracker | Standard Market 15m delay apply.
-        </p>
+    html_report += """
+            <p style="text-align: center; font-size: 0.7em; color: #bdc3c7; margin-top: 30px;">
+                Securely generated via Tony's AI Hub. Data: Yahoo Finance.
+            </p>
+        </div>
     </body>
     </html>
     """
-    send_email(html_content)
+    send_email(html_report)
 
-def send_email(html_body):
+def send_email(html_content):
     app_password = os.getenv("EMAIL_PASS")
     msg = MIMEMultipart()
     msg['From'] = SENDER_EMAIL
     msg['To'] = SENDER_EMAIL
-    msg['Subject'] = "📈 Research Note: Emerging Growth Scan"
-    msg.attach(MIMEText(html_body, 'html'))
-    
+    msg['Subject'] = "🔥 Daily AI Growth Intel: " + str(len(html_content))[:2] + " Stocks Scanned"
+    msg.attach(MIMEText(html_content, 'html'))
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(SENDER_EMAIL, app_password)
         server.send_message(msg)
