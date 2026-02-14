@@ -1,29 +1,22 @@
-name: Scheduled Stock Intelligence Report
+name: Institutional Stock Intelligence Report
 
 on:
   schedule:
-    # 10:00 AM IST is 4:30 AM UTC
-    - cron: '30 4 * * 1-5'
-    # 7:00 PM IST is 1:30 PM UTC
-    - cron: '30 13 * * 1-5'
-  workflow_dispatch: # Keeps the "Run Now" button active
+    - cron: '30 4 * * 1-5'  # 10:00 AM IST
+    - cron: '30 13 * * 1-5' # 7:00 PM IST
+  workflow_dispatch:
 
 jobs:
   run-tracker:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository code
-        uses: actions/checkout@v3
-
-      - name: Set up Python Environment
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-
-      - name: Install Analysis Dependencies
-        run: pip install yfinance requests
-
-      - name: Run AI Intelligence Script
+      - name: Install Professional Charting Tools
+        run: pip install yfinance requests mplfinance pandas
+      - name: Run Dashboard
         env:
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
