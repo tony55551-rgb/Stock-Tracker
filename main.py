@@ -7,7 +7,7 @@ from email.mime.multipart import MIMEMultipart
 # 1. CONFIGURATION
 # Your current holdings (from your portfolio)
 MY_STOCKS = ["TATAPOWER.NS", "JIOFIN.NS", "CGPOWER.NS", "KAYNES.NS", "SUZLON.NS"]
-SENDER_EMAIL = "your-email@gmail.com" # <--- REPLACE WITH YOUR GMAIL ADDRESS
+SENDER_EMAIL = "tony55551@gmail.com" # <--- REPLACE WITH YOUR GMAIL ADDRESS
 
 def get_market_report():
     report = "📈 DAILY MARKET REPORT\n" + "="*30 + "\n\n"
