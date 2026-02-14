@@ -10,7 +10,7 @@ SENDER_EMAIL = "tony55551@gmail.com"
 
 def get_discovery_pool():
     # Targeted '2x' Potential Sectors for 2026
-    return ["MAZDOCK.NS", "RVNL.NS", "TEJASNET.NS", "KAYNES.NS", "TITAGARH.NS", "SJVN.NS", "IRFC.NS", "DATA-PATTERNS.NS"]
+    return ["MAZDOCK.NS", "RVNL.NS", "TEJASNET.NS", "KAYNES.NS", "TITAGARH.NS", "SJVN.NS", "IRFC.NS", "DATA-PATTERNS.NS", "GPTINFRA.NS", "NHPC.NS"]
 
 def get_chart_base64(ticker):
     try:
@@ -29,7 +29,9 @@ def get_chart_base64(ticker):
 
 def get_relevant_news(ticker, name):
     api_key = os.getenv("NEWS_API_KEY")
-    query = f'("{name.split(" ")[0]}" OR "{ticker.split(".")[0]}") AND (stock OR "order book" OR breakout OR contract) -jobs -hiring'
+    core_name = name.split(" ")[0]
+    # Boolean query: Company name AND (Market keywords) NOT (HR/Noise)
+    query = f'("{core_name}" OR "{ticker.split(".")[0]}") AND (stock OR "order book" OR breakout OR contract) -jobs -hiring'
     url = f"https://newsapi.org/v2/everything?q={query}&sortBy=relevancy&language=en&apiKey={api_key}"
     try:
         art = requests.get(url).json().get('articles', [{}])[0]
@@ -43,11 +45,10 @@ def get_stock_data(ticker, is_discovery=False):
         price = inf.get('currentPrice', 0)
         ma50, ma200 = hist['Close'].rolling(50).mean().iloc[-1], hist['Close'].rolling(200).mean().iloc[-1]
         
-        # Trend & Value Logic
+        # Discovery Logic: Only include if it meets "multibagger" criteria
         is_breakout = ma50 > ma200 and price > ma50
         is_value = isinstance(inf.get('trailingPE'), (int, float)) and inf.get('trailingPE') < 20
         
-        # Only return Discovery stocks if they hit a trigger
         if is_discovery and not (is_breakout or is_value): return None
 
         return {
@@ -64,24 +65,24 @@ def main():
     with open('watchlist.txt', 'r') as f:
         watchlist = [line.strip() for line in f if line.strip()]
     
-    # 1. Gather all data (Watchlist + Discovery Pool)
     results = [get_stock_data(t) for t in watchlist]
     discoveries = [get_stock_data(t, is_discovery=True) for t in get_discovery_pool() if t not in watchlist]
     all_data = [r for r in (results + discoveries) if r]
 
-    # 2. Market Strength Leaderboard
     sector_perf = {}
     for r in all_data: sector_perf.setdefault(r['sector'], []).append(r['change'])
     leaderboard = sorted([{"s": s, "avg": sum(p)/len(p)} for s, p in sector_perf.items()], key=lambda x: x['avg'], reverse=True)
 
-    # 3. HTML Building
     html = f"<html><body style='background:#f4f7f6; padding:20px; font-family:sans-serif;'>"
+    
+    # 1. Market Strength Leaderboard
     html += "<div style='background:#2c3e50; color:white; padding:20px; border-radius:12px; margin-bottom:30px;'>"
     html += "<h2>📊 Market Strength Leaderboard</h2><table style='width:100%; color:white;'>"
     for entry in leaderboard:
         html += f"<tr><td>{entry['s']}</td><td style='text-align:right; color:{'#27ae60' if entry['avg'] > 0 else '#e74c3c'}; font-weight:bold;'>{entry['avg']:+.2f}%</td></tr>"
     html += "</table></div>"
 
+    # 2. Sector-Wise Discovery & Watchlist Cards
     for sector in [l['s'] for l in leaderboard]:
         html += f"<h2 style='color:#2c3e50; border-bottom:3px solid #3498db;'>📂 {sector}</h2>"
         for r in [x for x in all_data if x['sector'] == sector]:
