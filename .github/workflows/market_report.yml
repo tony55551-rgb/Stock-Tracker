@@ -1,4 +1,4 @@
-name: Institutional Sector Intelligence Report
+name: Institutional Stock Intelligence Report
 
 on:
   schedule:
@@ -14,9 +14,9 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-      - name: Install Professional Charting Tools
+      - name: Install Professional Libraries
         run: pip install yfinance requests mplfinance pandas
-      - name: Run Dashboard
+      - name: Run Script
         env:
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
