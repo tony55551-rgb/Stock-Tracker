@@ -19,9 +19,12 @@ def get_market_report():
             open_p = df['Open'].iloc[-1]
             change = ((price - open_p) / open_p) * 100
             
-            # Fetch news headline
+            # --- SAFER NEWS FETCHING ---
             news = stock.news
-            headline = news[0]['title'] if news else "No recent news."
+            headline = "No recent news."
+            if news and len(news) > 0:
+                # Use .get() to avoid the 'KeyError' crash
+                headline = news[0].get('title', news[0].get('summary', "Headline unavailable"))
             
             report += f"{ticker:12} | ₹{price:8.2f} ({change:+.2f}%)\n"
             report += f"   Latest: {headline}\n"
