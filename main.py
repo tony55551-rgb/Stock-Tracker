@@ -32,9 +32,11 @@ def get_market_report():
     return report
 
 def send_email(content):
-    # This pulls the 16-digit key safely from GitHub Secrets
+    sender_email = "tony55551@gmail.com" # Check this spelling 3 times!
     app_password = os.getenv("EMAIL_PASS")
     
+    print(f"Attempting login for: {sender_email}") # This will show in GitHub logs
+        
     msg = MIMEMultipart()
     msg['From'] = SENDER_EMAIL
     msg['To'] = SENDER_EMAIL
