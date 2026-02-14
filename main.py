@@ -32,25 +32,27 @@ def get_market_report():
     return report
 
 def send_email(content):
-    sender_email = "tony55551@gmail.com"
-    # This pulls the 16-digit key from your GitHub Secrets
+    sender_email = "tony55551@gmail.com" # Ensure all lowercase
     app_password = os.getenv("EMAIL_PASS")
     
+    # Sanity Check: This will tell us if the secret is missing or empty
+    if not app_password:
+        print("Error: EMAIL_PASS secret not found in GitHub!")
+        return
+
     msg = MIMEMultipart()
     msg['From'] = sender_email
     msg['To'] = sender_email
-    msg['Subject'] = "🚀 Your Automated Market Update"
+    msg['Subject'] = "🚀 Daily Market Report"
     msg.attach(MIMEText(content, 'plain'))
     
     try:
-        # Switching to SMTP_SSL on Port 465 for better server compatibility
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender_email, app_password)
             server.send_message(msg)
         print("Success: Email sent!")
     except Exception as e:
         print(f"Detailed Error: {e}")
-
 if __name__ == "__main__":
     report_data = get_market_report()
     send_email(report_data)
