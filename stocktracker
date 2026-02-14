@@ -1,55 +1,22 @@
 import yfinance as yf
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from openai import OpenAI
 
-# 1. CONFIGURATION
-# Add the stocks you want to track here
+# Your defined list of stocks
 MY_STOCKS = ["TATAPOWER.NS", "JIOFIN.NS", "CGPOWER.NS", "KAYNES.NS", "SUZLON.NS"]
-# Emerging watchlist (Semiconductors, Defense, etc.)
-WATCHLIST = ["BEL.NS", "APOLLO.NS", "INFIBEAM.NS", "NVDA"]
 
-def get_stock_report():
-    report_data = ""
+def get_report():
+    report = "📈 DAILY MARKET REPORT\n" + "="*25 + "\n"
     for ticker in MY_STOCKS:
         stock = yf.Ticker(ticker)
-        data = stock.history(period="1d")
-        if not data.empty:
-            price = data['Close'].iloc[-1]
-            change = ((data['Close'].iloc[-1] - data['Open'].iloc[0]) / data['Open'].iloc[0]) * 100
-            report_data += f"{ticker}: ₹{price:.2f} ({change:+.2f}%)\n"
-    return report_data
-
-def get_ai_summary(market_data):
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    prompt = f"Analyze these Indian portfolio stocks and provide a brief, professional summary: {market_data}"
-    
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "system", "content": "You are a helpful investment assistant."},
-                  {"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content
-
-def send_email(content):
-    sender = os.getenv("EMAIL_USER")
-    password = os.getenv("EMAIL_PASS") # Use an 'App Password', not your real password
-    
-    msg = MIMEMultipart()
-    msg['From'] = sender
-    msg['To'] = sender
-    msg['Subject'] = "📈 Your Daily Market Report"
-    msg.attach(MIMEText(content, 'plain'))
-    
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
-        server.login(sender, password)
-        server.send_message(msg)
+        df = stock.history(period="1d")
+        if not df.empty:
+            price = df['Close'].iloc[-1]
+            open_p = df['Open'].iloc[-1]
+            change = ((price - open_p) / open_p) * 100
+            report += f"{ticker}: ₹{price:.2f} ({change:+.2f}%)\n"
+    return report
 
 if __name__ == "__main__":
-    raw_data = get_stock_report()
-    ai_analysis = get_ai_summary(raw_data)
-    full_report = f"Raw Data:\n{raw_data}\n\nAI Analysis:\n{ai_analysis}"
-    send_email(full_report)
+    full_data = get_report()
+    print(full_data) 
+    # Later, we will add the "send_email(full_data)" function here
