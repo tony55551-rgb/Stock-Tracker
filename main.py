@@ -4,55 +4,94 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# 1. CONFIGURATION
-# Your current holdings (from your portfolio)
-MY_STOCKS = ["TATAPOWER.NS", "JIOFIN.NS", "CGPOWER.NS", "KAYNES.NS", "SUZLON.NS"]
-SENDER_EMAIL = "tony55551@gmail.com" # <--- REPLACE WITH YOUR GMAIL ADDRESS
+SENDER_EMAIL = "tony55551@gmail.com"
 
-def get_market_report():
-    report = "📈 DAILY MARKET REPORT\n" + "="*30 + "\n\n"
-    for ticker in MY_STOCKS:
-        stock = yf.Ticker(ticker)
-        df = stock.history(period="1d")
-        if not df.empty:
-            price = df['Close'].iloc[-1]
-            open_p = df['Open'].iloc[-1]
-            change = ((price - open_p) / open_p) * 100
-            
-            # --- SAFER NEWS FETCHING ---
-            news = stock.news
-            headline = "No recent news."
-            if news and len(news) > 0:
-                # Use .get() to avoid the 'KeyError' crash
-                headline = news[0].get('title', news[0].get('summary', "Headline unavailable"))
-            
-            report += f"{ticker:12} | ₹{price:8.2f} ({change:+.2f}%)\n"
-            report += f"   Latest: {headline}\n"
-            report += "-"*35 + "\n"
-    return report
-
-def send_email(content):
-    sender_email = "tony55551@gmail.com" # Ensure all lowercase
-    app_password = os.getenv("EMAIL_PASS")
-    
-    # Sanity Check: This will tell us if the secret is missing or empty
-    if not app_password:
-        print("Error: EMAIL_PASS secret not found in GitHub!")
-        return
-
-    msg = MIMEMultipart()
-    msg['From'] = sender_email
-    msg['To'] = sender_email
-    msg['Subject'] = "🚀 Daily Market Report"
-    msg.attach(MIMEText(content, 'plain'))
-    
+def get_research_data(ticker):
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(sender_email, app_password)
-            server.send_message(msg)
-        print("Success: Email sent!")
-    except Exception as e:
-        print(f"Detailed Error: {e}")
+        stock = yf.Ticker(ticker)
+        info = stock.info
+        
+        # Fundamental Metrics
+        pe = info.get('trailingPE', 'N/A')
+        eps = info.get('trailingEps', 'N/A')
+        cap = info.get('marketCap', 0)
+        fv = info.get('faceValue', 'N/A')
+        price = info.get('currentPrice', 'N/A')
+        change = info.get('regularMarketChangePercent', 0)
+
+        # Categorization Logic
+        cap_label = "MID-CAP" if cap > 200000000000 else "SMALL-CAP"
+        cap_color = "#3498db" if cap_label == "MID-CAP" else "#e67e22"
+
+        # AI News Scan for Order Books & Institutions
+        news = stock.news
+        order_book = "Neutral: Standard operations."
+        inst_view = "No major institutional alerts."
+        
+        for n in news:
+            title = n.get('title', "").lower()
+            if any(k in title for k in ["order book", "l1 bidder", "contract", "win"]):
+                order_book = f"🚀 <b>{n.get('title')}</b>"
+            if any(k in title for k in ["goldman", "jp morgan", "morgan stanley", "rating"]):
+                inst_view = f"🏛️ <b>{n.get('title')}</b>"
+
+        return f"""
+        <div style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px; font-family: sans-serif;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f4f4f4; padding-bottom: 10px;">
+                <span style="font-size: 1.2em; font-weight: bold; color: #2c3e50;">{ticker}</span>
+                <span style="background: {cap_color}; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.8em;">{cap_label}</span>
+            </div>
+            <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr;">
+                <p><b>Price:</b> ₹{price} <span style="color: {'green' if change >= 0 else 'red'};">({change:+.2f}%)</span></p>
+                <p><b>Face Value:</b> {fv}</p>
+                <p><b>PE Ratio:</b> {pe if pe == 'N/A' else f"{pe:.2f}"}</p>
+                <p><b>EPS:</b> {eps if eps == 'N/A' else f"{eps:.2f}"}</p>
+            </div>
+            <div style="background: #f9f9f9; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                <p style="margin: 0; font-size: 0.9em; color: #555;"><b>ORDER BOOK:</b> {order_book}</p>
+            </div>
+            <div style="background: #eef2f3; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                <p style="margin: 0; font-size: 0.9em; color: #555;"><b>INSTITUTIONAL INTEL:</b> {inst_view}</p>
+            </div>
+        </div>
+        """
+    except Exception: return ""
+
+def main():
+    with open('watchlist.txt', 'r') as f:
+        stocks = [line.strip() for line in f if line.strip()]
+
+    html_content = """
+    <html>
+    <body style="background-color: #f4f7f6; padding: 20px;">
+        <h2 style="color: #2c3e50; text-align: center;">🔥 AI MULTIBAGGER INTELLIGENCE REPORT</h2>
+        <p style="text-align: center; color: #7f8c8d;">Focus: High Order Books | Growth Fundamentals</p>
+        <hr style="border: 0; height: 1px; background: #ddd; margin-bottom: 30px;">
+    """
+    
+    for ticker in stocks:
+        html_content += get_research_data(ticker)
+
+    html_content += """
+        <p style="font-size: 0.8em; color: #95a5a6; text-align: center; margin-top: 30px;">
+            Generated by Tony's AI Tracker | Standard Market 15m delay apply.
+        </p>
+    </body>
+    </html>
+    """
+    send_email(html_content)
+
+def send_email(html_body):
+    app_password = os.getenv("EMAIL_PASS")
+    msg = MIMEMultipart()
+    msg['From'] = SENDER_EMAIL
+    msg['To'] = SENDER_EMAIL
+    msg['Subject'] = "📈 Research Note: Emerging Growth Scan"
+    msg.attach(MIMEText(html_body, 'html'))
+    
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(SENDER_EMAIL, app_password)
+        server.send_message(msg)
+
 if __name__ == "__main__":
-    report_data = get_market_report()
-    send_email(report_data)
+    main()
